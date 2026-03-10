@@ -1,0 +1,94 @@
+body {
+    background: #121212;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.auth-card {
+    width: 350px;
+    padding: 30px;
+    background: #1e1e1e;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: 400;
+}
+
+/* Стиль инпутов как на вашем скриншоте */
+.input-group {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.input-group label {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: #1e1e1e; /* Цвет фона карточки, чтобы перекрыть рамку */
+    padding: 0 5px;
+    font-size: 12px;
+    color: #8a8dff;
+    z-index: 1;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1.5px solid #333;
+    border-radius: 8px;
+    color: white;
+    outline: none;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.input-group input:focus {
+    border-color: #8a8dff;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    background: #8a8dff;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #7376ff;
+}
+
+.error {
+    color: #ff5555;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 15px;
+    min-height: 18px;
+}
+
+.footer-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #aaa;
+}
+
+.footer-link a {
+    color: #8a8dff;
+    text-decoration: none;
+}
