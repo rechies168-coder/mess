@@ -3,42 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <title>iMSITChat</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        :root { --bg: #0f0f0f; --side: #212121; --accent: #8774e1; --text: #ffffff; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        .sidebar { width: 350px; background: var(--side); display: flex; flex-direction: column; border-right: 1px solid #000; z-index: 10; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: 400px; }
+
+        /* Settings Pane */
+        .settings-pane { position: absolute; left: -350px; top: 0; width: 350px; height: 100%; background: #1c1c1c; transition: 0.3s; z-index: 100; padding: 20px; box-sizing: border-box; }
+        .settings-pane.active { left: 0; }
+        .profile-av { width: 120px; height: 120px; border-radius: 50%; display: block; margin: 20px auto; object-fit: cover; cursor: pointer; border: 2px solid var(--accent); }
+        .info-item { display: flex; align-items: center; gap: 20px; margin-top: 25px; }
+        .info-text div:first-child { font-weight: bold; }
+        .info-text div:last-child { color: #aaa; font-size: 12px; }
+
+        /* Chat list & Messages */
+        .list-item { display: flex; align-items: center; padding: 12px; gap: 15px; cursor: pointer; border-bottom: 1px solid #121212; }
+        .list-item:hover { background: #2c2c2c; }
+        .list-item img { width: 45px; height: 45px; border-radius: 50%; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 70%; position: relative; font-size: 15px; background: #212121; }
+        .msg.my { align-self: flex-end; background: var(--accent); }
+        .msg.other { align-self: flex-start; }
+
+        /* Input Bar */
+        .input-bar { padding: 10px 20px; background: var(--side); display: flex; align-items: center; gap: 15px; }
+        .input-bar input { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 16px; }
+        .icon { font-size: 24px; cursor: pointer; color: var(--accent); }
+        .recording { color: #ff4444; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .emoji-panel { position: absolute; bottom: 70px; left: 370px; background: var(--side); padding: 10px; border-radius: 10px; display: none; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    </style>
 </head>
 <body>
-    <!-- Settings Overlay -->
+
     <div id="settings" class="settings-pane">
-        <div class="settings-header"><span id="closeSettings">←</span> <b>Settings</b></div>
-        <img id="my-av" class="profile-av" src="" onclick="document.getElementById('avatarInput').click()">
-        <input type="file" id="avatarInput" style="display:none" accept="image/*">
-        <h2 id="my-name"></h2>
+        <div style="font-size: 20px; cursor: pointer;" onclick="toggleSettings()">← Settings</div>
+        <img id="my-av" class="profile-av" src="" onclick="document.getElementById('avIn').click()">
+        <input type="file" id="avIn" style="display:none" accept="image/*">
+        <h2 id="my-name" style="text-align: center;"></h2>
+
+        <div class="info-item">
+            <span>📝</span>
+            <div class="info-text">
+                <input type="text" id="my-bio" style="background:none; border:none; border-bottom:1px solid #333; color:white; outline:none;" placeholder="О себе...">
+                <div>Bio</div>
+            </div>
+        </div>
         <div class="info-item"><span>@</span><div class="info-text"><div id="my-user"></div><div>Username</div></div></div>
+        <button onclick="saveProfile()" style="width:100%; margin-top:30px; background:var(--accent); border:none; color:white; padding:10px; border-radius:5px; cursor:pointer;">Сохранить</button>
     </div>
 
-    <!-- Sidebar -->
     <div class="sidebar">
-        <div class="search-area">
-            <span id="openSettings">☰</span>
-            <input type="text" id="searchInput" placeholder="Поиск">
+        <div style="padding: 15px; display: flex; gap: 10px; align-items: center;">
+            <span onclick="toggleSettings()" style="cursor: pointer; font-size: 20px;">☰</span>
+            <input type="text" id="srch" oninput="search()" placeholder="Поиск" style="flex:1; background:#121212; border:none; color:white; padding:10px; border-radius:20px; outline:none;">
         </div>
         <div id="rooms-list"></div>
     </div>
 
-    <!-- Chat Area -->
     <div class="chat-area">
-        <div id="chat-header" class="chat-header" style="display:none"></div>
+        <div id="h" style="padding:15px; background:var(--side); font-weight:bold; display:none;"></div>
         <div id="messages" class="messages"></div>
-        <div id="emojis" class="emoji-list">
-            <span class="emoji">😊</span><span class="emoji">😂</span><span class="emoji">❤️</span><span class="emoji">🔥</span><span class="emoji">👍</span>
+        <div id="emojis" class="emoji-panel">
+            <span onclick="addE('😊')">😊</span><span onclick="addE('😂')">😂</span><span onclick="addE('❤️')">❤️</span><span onclick="addE('🔥')">🔥</span>
         </div>
-        <div class="input-bar" id="input-bar" style="display:none">
-            <span class="icon" id="emojiBtn">😊</span>
-            <input type="text" id="msgInput" placeholder="Message">
-            <span class="icon" id="micBtn">🎤</span>
-            <span class="icon" id="sendBtn">➤</span>
+        <div class="input-bar" id="input-bar" style="display:none;">
+            <span class="icon" onclick="toggleE()">😊</span>
+            <input type="text" id="msgIn" placeholder="Сообщение...">
+            <span class="icon" id="mic" onmousedown="startV()" onmouseup="stopV()">🎤</span>
+            <span class="icon" onclick="send()">➤</span>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script>
+        let currentRoomId = null;
+        let myName = "";
+        let mediaRecorder;
+        let chunks = [];
+
+        // Инициализация
+        fetch('/api/me').then(r => r.json()).then(u => {
+            myName = u.username;
+            document.getElementById('my-av').src = u.avatar;
+            document.getElementById('my-name').innerText = u.username;
+            document.getElementById('my-user').innerText = '@' + u.username;
+            document.getElementById('my-bio').value = u.bio;
+            loadRooms();
+        });
+
+        function toggleSettings() { document.getElementById('settings').classList.toggle('active'); }
+        function toggleE() { const e = document.getElementById('emojis'); e.style.display = e.style.display === 'flex' ? 'none' : 'flex'; }
+        function addE(s) { document.getElementById('msgIn').value += s; toggleE(); }
+
+        function search() {
+            const q = document.getElementById('srch').value;
+            if(!q) return loadRooms();
+            fetch('/api/users/search?q='+q).then(r => r.json()).then(users => {
+                document.getElementById('rooms-list').innerHTML = users.map(u => `
+                    <div class="list-item" onclick="startChat('${u.username}')"><img src="${u.avatar}"><b>${u.username}</b></div>
+                `).join('');
+            });
+        }
+
+        function loadRooms() {
+            fetch('/api/rooms').then(r => r.json()).then(rooms => {
+                document.getElementById('rooms-list').innerHTML = rooms.map(r => `
+                    <div class="list-item" onclick="openChat(${r.id},'${r.name}')"><img src="${r.avatar}"><b>${r.name}</b></div>
+                `).join('');
+            });
+        }
+
+        function startChat(name) {
+            fetch('/api/chat/start/'+name, {method:'POST'}).then(r => r.json()).then(data => {
+                openChat(data.room_id, data.name); loadRooms();
+            });
+        }
+
+        function openChat(id, name) {
+            currentRoomId = id;
+            document.getElementById('h').innerText = name; document.getElementById('h').style.display = 'block';
+            document.getElementById('input-bar').style.display = 'flex';
+            loadMsgs();
+        }
+
+        function loadMsgs() {
+            if(!currentRoomId) return;
+            fetch('/api/messages/'+currentRoomId).then(r => r.json()).then(msgs => {
+                document.getElementById('messages').innerHTML = msgs.map(m => `
+                    <div class="msg ${m.username === myName ? 'my' : 'other'}">
+                        ${m.text ? `<div>${m.text}</div>` : ''}
+                        ${m.voice ? `<audio src="${m.voice}" controls></audio>` : ''}
+                        <div style="font-size:10px; opacity:0.5; text-align:right;">${m.time}</div>
+                    </div>`).join('');
+                const d = document.getElementById('messages'); d.scrollTop = d.scrollHeight;
+            });
+        }
+
+        function send() {
+            const val = document.getElementById('msgIn').value;
+            if(!val) return;
+            const fd = new FormData(); fd.append('text', val);
+            fetch('/api/messages/'+currentRoomId, {method:'POST', body:fd}).then(() => {
+                document.getElementById('msgIn').value = ''; loadMsgs();
+            });
+        }
+
+        function saveProfile() {
+            const fd = new FormData();
+            fd.append('bio', document.getElementById('my-bio').value);
+            if(document.getElementById('avIn').files[0]) fd.append('avatar', document.getElementById('avIn').files[0]);
+            fetch('/api/profile/update', {method:'POST', body:fd}).then(r => r.json()).then(d => {
+                alert("Обновлено!"); document.getElementById('my-av').src = d.avatar_url;
+            });
+        }
+
+        function startV() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
+                mediaRecorder = new MediaRecorder(s); mediaRecorder.start();
+                document.getElementById('mic').classList.add('recording');
+                chunks = []; mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            });
+        }
+
+        function stopV() {
+            if(!mediaRecorder) return;
+            mediaRecorder.stop(); document.getElementById('mic').classList.remove('recording');
+            mediaRecorder.onstop = () => {
+                const fd = new FormData(); fd.append('voice', new Blob(chunks, {type:'audio/webm'}));
+                fetch('/api/messages/'+currentRoomId, {method:'POST', body:fd}).then(() => loadMsgs());
+            };
+        }
+
+        setInterval(loadMsgs, 3000);
+    </script>
 </body>
 </html>
